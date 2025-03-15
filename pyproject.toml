@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 120
+lint.ignore = [
+    # wildcard imports are fine
+    "F403",
+    "F405",
+    "PLR"
+]
+lint.extend-select = ["I", "UP", "PL"]
+target-version = "py312"
