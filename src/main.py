@@ -8,20 +8,22 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from ollama import ChatResponse, chat
 
+from src.db import Message, MessageRepository, init_db  # import classes and functions we just created
+
 dotenv.load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 TOKEN = getenv("BOT_TOKEN")  # Replace with your actual token or use environment variable
-MODEL_NAME = 'llama3.2' # Fine as long as we are working with only one model
+MODEL_NAME = "llama3.2"  # Fine as long as we are working with only one model
 
 # Initialize bot and dispatcher
 dp = Dispatcher()
-
-# Dictionary to store conversation history for each user
-# Key: chat_id, Value: list of message objects
-conversation_history = {}
+# Initialize the database connection
+db_conn = init_db()
+# Create repository instance with connection it will use. We will use that instance in the code
+message_repo = MessageRepository(db_conn)
 
 
 @dp.message(CommandStart())
@@ -29,7 +31,7 @@ async def start_handler(message: types.Message) -> None:
     """
     Handler for /start command. Resets conversation history for the user.
     """
-    conversation_history[message.chat.id] = []
+    message_repo.delete_all_for_chat(message.chat.id)
     await message.answer("Hi! I'm AI chat bot")
 
 
@@ -39,33 +41,29 @@ async def message_handler(message: types.Message) -> None:
     Handler will send LLM response
     """
     try:
-        if message.chat.id not in conversation_history:
-            conversation_history[message.chat.id] = []
+        # Create and save user message
+        user_message = Message(chat_id=message.chat.id, role="user", content=message.text)
+        message_repo.save(user_message)
 
-        # Add user message to history
-        user_message = {"role": "user", "content": message.text}
-        conversation_history[message.chat.id].append(user_message)
+        # Get recent messages
+        recent_messages = message_repo.fetch_last_n(message.chat.id, 10)
+        # Convert to format required by Ollama
+        ollama_history = [msg.to_dict() for msg in recent_messages]
 
-        # Get the last 10 messages
-        recent_history = conversation_history[message.chat.id][-10:]
-
-        # Set "typing" status while generating response to show user that message is being processed
         await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
         # Get response from LLM
         response: ChatResponse = chat(
             model=MODEL_NAME,
-            messages=recent_history,
+            messages=ollama_history,
         )
 
-        # Add assistant response to history
-        assistant_message = {"role": "assistant", "content": response.message.content}
-        conversation_history[message.chat.id].append(assistant_message)
+        # Create and save assistant message
+        assistant_message = Message(chat_id=message.chat.id, role="assistant", content=response.message.content)
+        message_repo.save(assistant_message)
 
-        # Send user LLM response
         await message.answer(response.message.content)
     except Exception as e:
-        # Handle errors, raised during response generation, we catch all exceptions since we handle them same way
         logging.error(e)
         await message.answer("Error occurred during response generating")
 

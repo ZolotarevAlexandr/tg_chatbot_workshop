@@ -12,6 +12,7 @@ __pycache__
 settings.yaml
 private.pem
 public.pem
+/db/
 
 ### OS ###
 .DS_Store
