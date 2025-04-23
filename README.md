@@ -522,3 +522,23 @@ if __name__ == "__main__":
 
 Congratulations, now bot uses database for keeping messages and will not lose them
 if you'll need to restart it.
+
+## What to do next?
+
+Obviously, bot right now is pretty small and there is a room for improvement. 
+Here is some stuff you can try to do next:
+- Try other models, let user choose model
+- Try multimodal LLMs and add functionality to work with pictures
+- Implement middleware layer that will determine which model to use for response, based on request
+- Add ORM (like sqlalchemy) for working with database, instead of "raw" SQL
+- Run everything inside a Docker container
+- Host your project on a server
+
+(It can be part 2, if liked this one)
+
+## Useful links
+- [Ollama documentation and examples](https://github.com/ollama/ollama-python/tree/main/examples)
+- [Ollama-python documentation and examples](https://github.com/ollama/ollama-python/tree/main/examples)
+- [Template for aiogram bots](https://github.com/one-zero-eight/aiogram-template.git)
+- [Larger aiogram bot](https://github.com/one-zero-eight/music-room.git)
+- [Implementation of messages with ORM](https://github.com/one-zero-eight/hackathon-integration-platform.git)
